@@ -44,6 +44,7 @@ Inspired by how `ripgrep` reimagined `grep` — not a wrapper, a ground-up rethi
 | [`hashx`](#hashx) | md5sum, sha1sum, sha256sum, b3sum | Multi-algorithm file hashing |
 | [`termx`](#termx) | tput, stty, env heuristics | Terminal & TTY inspection |
 | [`astx`](#astx) | ctags, tree-sitter CLI | Source-code AST & symbol extraction |
+| [`dnsx`](#dnsx) | dig, nslookup, host | Structured DNS lookups |
 
 ---
 
@@ -69,7 +70,7 @@ cd xunix
 cargo build --workspace --release
 
 # All binaries land in target/release/
-cp target/release/{lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx} /usr/local/bin/
+cp target/release/{lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx,dnsx} /usr/local/bin/
 ```
 
 ---
@@ -484,6 +485,31 @@ astx script --lang python --symbols   # force a language when there's no extensi
 
 ---
 
+### dnsx
+
+**Replaces:** `dig`, `nslookup`, `host`
+
+Resolves DNS records into structured JSON. TTLs are integers, records are typed and grouped, and the resolver used is reported — no scraping `dig`'s columnar output. Pure-Rust resolver (hickory), no `libresolv` or external binary required.
+
+```bash
+dnsx example.com                      # A records
+dnsx example.com --type MX,TXT        # specific record types (comma-separated)
+dnsx example.com --all                # common set: A, AAAA, MX, TXT, NS, CNAME, SOA
+dnsx example.com --server 1.1.1.1     # query a specific resolver (or 8.8.8.8:53)
+dnsx 93.184.216.34 --reverse          # reverse (PTR) lookup
+dnsx example.com --type MX --out table
+```
+
+**Supported record types:** `A`, `AAAA`, `MX`, `TXT`, `CNAME`, `NS`, `SOA`, `PTR`, `SRV`, `CAA`
+
+**Record fields:** `type`, `name`, `ttl` (integer seconds), `value`; plus `priority` (MX/SRV), `weight` / `port` (SRV), and `target` (MX/SRV/CNAME/NS/PTR).
+
+**Top-level fields:** `query`, `resolver` (`"system"` or `ip:port`), `record_types`, `records`, `count`, `elapsed_ms`.
+
+**Errors & fallbacks:** an unknown record type or malformed resolver/IP emits `{"error": "...", "query": "..."}` on stderr and exits non-zero. A name that simply has no records of the requested type is a *successful* empty result (`count: 0`), not an error.
+
+---
+
 ## Composing tools
 
 ```bash
@@ -552,6 +578,7 @@ diffx base.py ours.py theirs.py --out pretty
 | hashx | ✓ | ✓ | ✓ |
 | termx | ✓ | ✓ | ✓ |
 | astx | ✓ | ✓ | ✓ |
+| dnsx | ✓ | ✓ | ✓ |
 
 "Structured fallback" means the tool returns a JSON `unavailable` block with a reason and platform-specific alternative — never silence, never a crash.
 

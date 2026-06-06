@@ -73,3 +73,7 @@ path = "termx_test.rs"
 [[test]]
 name = "astx_test"
 path = "astx_test.rs"
+
+[[test]]
+name = "dnsx_test"
+path = "dnsx_test.rs"
