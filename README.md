@@ -43,6 +43,8 @@ Inspired by how `ripgrep` reimagined `grep` — not a wrapper, a ground-up rethi
 | [`statx`](#statx) | vmstat, iostat, sar, top | Time-series system stats |
 | [`hashx`](#hashx) | md5sum, sha1sum, sha256sum, b3sum | Multi-algorithm file hashing |
 | [`termx`](#termx) | tput, stty, env heuristics | Terminal & TTY inspection |
+| [`astx`](#astx) | ctags, tree-sitter CLI | Source-code AST & symbol extraction |
+| [`dnsx`](#dnsx) | dig, nslookup, host | Structured DNS lookups |
 
 ---
 
@@ -68,7 +70,7 @@ cd xunix
 cargo build --workspace --release
 
 # All binaries land in target/release/
-cp target/release/{lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx} /usr/local/bin/
+cp target/release/{lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx,dnsx} /usr/local/bin/
 ```
 
 ---
@@ -259,6 +261,8 @@ jsonx --ndjson-in '.name' logs.ndjson # process NDJSON input
 ```
 
 **Path syntax:** `.key`, `.key.nested`, `.[0]`, `.[]` / `.*` (wildcard), `[1:3]` (slice), `[?(@.key == "val")]`, `[?(@.n > 10)]`, `[?(@.n < 10)]`
+
+**Filter operators:** `==`, `!=`, `>`, `>=`, `<`, `<=`, combined with `&&` and `||` — e.g. `[?(@.git_status == "modified" && @.size > 5000)]` (`||` binds looser than `&&`)
 
 ---
 
@@ -455,6 +459,57 @@ termx --out table                 # human-readable
 
 ---
 
+### astx
+
+**Replaces:** `ctags`, the `tree-sitter` CLI, ad-hoc regex/grammar scraping of source files
+
+Parses a source file into a structured JSON AST using tree-sitter. Agents get real syntax structure — declarations, ranges, node kinds — without screen-scraping a grammar tool's text output.
+
+**Supported languages:** Rust, Python, JavaScript, TypeScript, TSX, Go (detected by extension, override with `--lang`)
+
+```bash
+astx src/main.rs                      # full AST as JSON
+astx src/main.rs --symbols            # declarations only (ctags-style)
+astx src/main.rs --symbols --out table
+astx app.py --kind function_definition   # flat list of nodes by kind
+astx src/lib.rs --depth 2             # cap AST depth
+astx src/main.rs --query '(function_item name: (identifier) @fn)'  # tree-sitter query
+astx script --lang python --symbols   # force a language when there's no extension
+```
+
+**AST node fields:** `kind`, `named`, `start` / `end` (each `{row, col, byte}`), `text` (leaf nodes only), `field` (field name in parent, if any), `children`
+
+**Symbol fields** (`--symbols`): `name`, `kind`, `start`, `end`
+
+**Errors & fallbacks:** a missing file emits `{"error": "...", "path": "..."}` on stderr; an unsupported extension emits a structured `{"unavailable": {...}}` block listing the supported languages — never a crash.
+
+---
+
+### dnsx
+
+**Replaces:** `dig`, `nslookup`, `host`
+
+Resolves DNS records into structured JSON. TTLs are integers, records are typed and grouped, and the resolver used is reported — no scraping `dig`'s columnar output. Pure-Rust resolver (hickory), no `libresolv` or external binary required.
+
+```bash
+dnsx example.com                      # A records
+dnsx example.com --type MX,TXT        # specific record types (comma-separated)
+dnsx example.com --all                # common set: A, AAAA, MX, TXT, NS, CNAME, SOA
+dnsx example.com --server 1.1.1.1     # query a specific resolver (or 8.8.8.8:53)
+dnsx 93.184.216.34 --reverse          # reverse (PTR) lookup
+dnsx example.com --type MX --out table
+```
+
+**Supported record types:** `A`, `AAAA`, `MX`, `TXT`, `CNAME`, `NS`, `SOA`, `PTR`, `SRV`, `CAA`
+
+**Record fields:** `type`, `name`, `ttl` (integer seconds), `value`; plus `priority` (MX/SRV), `weight` / `port` (SRV), and `target` (MX/SRV/CNAME/NS/PTR).
+
+**Top-level fields:** `query`, `resolver` (`"system"` or `ip:port`), `record_types`, `records`, `count`, `elapsed_ms`.
+
+**Errors & fallbacks:** an unknown record type or malformed resolver/IP emits `{"error": "...", "query": "..."}` on stderr and exits non-zero. A name that simply has no records of the requested type is a *successful* empty result (`count: 0`), not an error.
+
+---
+
 ## Composing tools
 
 ```bash
@@ -522,6 +577,8 @@ diffx base.py ours.py theirs.py --out pretty
 | statx | ✓ | ✓ | ✓ |
 | hashx | ✓ | ✓ | ✓ |
 | termx | ✓ | ✓ | ✓ |
+| astx | ✓ | ✓ | ✓ |
+| dnsx | ✓ | ✓ | ✓ |
 
 "Structured fallback" means the tool returns a JSON `unavailable` block with a reason and platform-specific alternative — never silence, never a crash.
 
