@@ -3,7 +3,7 @@
 # Windows: use install.ps1 instead
 set -euo pipefail
 
-REPO="YOUR_USERNAME/aitoolx"
+REPO="pi-bansal/aitoolx"
 INSTALL_DIR="${AITOOLX_INSTALL_DIR:-/usr/local/bin}"
 TOOLS=(lx px logx dx arcx envx netx jsonx procx idx diffx memx statx hashx termx astx dnsx)
 

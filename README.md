@@ -6,10 +6,10 @@ Built for AI agents that call shell tools. Humans can use them too — `--out ta
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/aitoolx/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pi-bansal/aitoolx/main/install.sh | bash
 
 # Windows (PowerShell)
-iwr https://raw.githubusercontent.com/YOUR_USERNAME/aitoolx/main/install.ps1 | iex
+iwr https://raw.githubusercontent.com/pi-bansal/aitoolx/main/install.ps1 | iex
 ```
 
 ---
@@ -65,7 +65,7 @@ Every tool follows the same rules:
 ## Build
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/aitoolx
+git clone https://github.com/pi-bansal/aitoolx
 cd aitoolx
 cargo build --workspace --release
 

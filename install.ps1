@@ -1,7 +1,7 @@
 # aitoolx installer for Windows (PowerShell)
-# Run: iwr https://raw.githubusercontent.com/YOUR_USERNAME/aitoolx/main/install.ps1 | iex
+# Run: iwr https://raw.githubusercontent.com/pi-bansal/aitoolx/main/install.ps1 | iex
 
-$Repo    = "YOUR_USERNAME/aitoolx"
+$Repo    = "pi-bansal/aitoolx"
 $InstallDir = if ($env:AITOOLX_INSTALL_DIR) { $env:AITOOLX_INSTALL_DIR } else { "$env:USERPROFILE\.aitoolx\bin" }
 $Tools   = @("lx","px","logx","dx","arcx","envx","netx","jsonx","procx","idx","diffx","memx","statx","hashx","termx","astx","dnsx")
 $Arch    = if ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -eq "Arm64") { "aarch64" } else { "x86_64" }
