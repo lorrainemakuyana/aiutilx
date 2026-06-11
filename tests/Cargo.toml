@@ -23,32 +23,56 @@ serde_json = "1"
 tempfile = "3"
 
 [[test]]
-name = "lx_test"
-path = "lx_test.rs"
+name = "arcx_test"
+path = "arcx_test.rs"
 
 [[test]]
-name = "hashx_test"
-path = "hashx_test.rs"
+name = "astx_test"
+path = "astx_test.rs"
+
+[[test]]
+name = "confx_test"
+path = "confx_test.rs"
 
 [[test]]
 name = "diffx_test"
 path = "diffx_test.rs"
 
 [[test]]
-name = "px_test"
-path = "px_test.rs"
+name = "dnsx_test"
+path = "dnsx_test.rs"
 
 [[test]]
 name = "dx_test"
 path = "dx_test.rs"
 
 [[test]]
-name = "arcx_test"
-path = "arcx_test.rs"
-
-[[test]]
 name = "envx_test"
 path = "envx_test.rs"
+
+[[test]]
+name = "gitx_test"
+path = "gitx_test.rs"
+
+[[test]]
+name = "hashx_test"
+path = "hashx_test.rs"
+
+[[test]]
+name = "idx_test"
+path = "idx_test.rs"
+
+[[test]]
+name = "logx_test"
+path = "logx_test.rs"
+
+[[test]]
+name = "lx_test"
+path = "lx_test.rs"
+
+[[test]]
+name = "memx_test"
+path = "memx_test.rs"
 
 [[test]]
 name = "netx_test"
@@ -59,8 +83,8 @@ name = "procx_test"
 path = "procx_test.rs"
 
 [[test]]
-name = "memx_test"
-path = "memx_test.rs"
+name = "px_test"
+path = "px_test.rs"
 
 [[test]]
 name = "statx_test"
@@ -69,23 +93,3 @@ path = "statx_test.rs"
 [[test]]
 name = "termx_test"
 path = "termx_test.rs"
-
-[[test]]
-name = "astx_test"
-path = "astx_test.rs"
-
-[[test]]
-name = "dnsx_test"
-path = "dnsx_test.rs"
-
-[[test]]
-name = "confx_test"
-path = "confx_test.rs"
-
-[[test]]
-name = "logx_test"
-path = "logx_test.rs"
-
-[[test]]
-name = "idx_test"
-path = "idx_test.rs"

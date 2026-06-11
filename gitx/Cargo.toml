@@ -1,0 +1,22 @@
+[package]
+name = "gitx"
+version = "0.1.0"
+edition = "2021"
+description = "Structured git inspection for AI agents"
+
+[[bin]]
+name = "gitx"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+git2 = { version = "0.19", default-features = false }
+ux-output = { path = "../ux-output" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

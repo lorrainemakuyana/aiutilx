@@ -46,6 +46,7 @@ Inspired by how `ripgrep` reimagined `grep` — not a wrapper, a ground-up rethi
 | [`astx`](#astx) | ctags, tree-sitter CLI | Source-code AST & symbol extraction |
 | [`dnsx`](#dnsx) | dig, nslookup, host | Structured DNS lookups |
 | [`confx`](#confx) | yq, manual config parsing | YAML/TOML/INI/.properties to JSON |
+| [`gitx`](#gitx) | git log, git status, git branch, git stash, git tag | Structured git inspection |
 
 ---
 
@@ -554,6 +555,60 @@ confx a.yaml b.toml c.ini             # parse several files at once
 
 ---
 
+### gitx
+
+**Replaces:** `git log`, `git status`, `git branch -vv`, `git stash list`, `git tag -l`
+
+Structured git inspection in a single binary. All five subcommands output JSON by default.
+
+```bash
+gitx log .                            # last 50 commits
+gitx log . -n 10                      # last 10 commits
+gitx log . --author alice             # filter by author
+gitx log . --grep "fix:"              # filter by message substring
+gitx log . --no-merges                # exclude merge commits
+gitx log . --out ndjson               # one commit per line
+
+gitx status .                         # working tree + staged changes
+gitx status . --out table             # human-readable
+
+gitx branches .                       # local branches with tracking info
+gitx branches . --remote              # remote branches only
+gitx branches . --all                 # local + remote
+gitx branches . --out table           # human-readable
+
+gitx stash .                          # list stash entries
+gitx stash . --out table
+
+gitx tags .                           # all tags, most recent first
+gitx tags . -n 5                      # last 5 tags
+gitx tags . --out table
+```
+
+**`gitx log` output fields:** `repo`, `branch`, `count`, `commits[]`
+
+**Commit fields:** `hash` (40-char), `short_hash` (7-char), `author_name`, `author_email`, `author_time` (epoch), `committer_name`, `committer_email`, `commit_time` (epoch), `summary`, `body` (optional), `parents[]`, `is_merge`
+
+**`gitx status` output fields:** `repo`, `branch`, `upstream`, `ahead`, `behind`, `clean`, `staged`, `unstaged`, `untracked`, `entries[]`
+
+**Status entry fields:** `path`, `old_path` (renames only), `index_status`, `workdir_status`
+
+**Status values:** `added`, `modified`, `deleted`, `renamed`, `typechange`, `untracked`, `conflicted`
+
+**`gitx branches` output fields:** `repo`, `current`, `count`, `branches[]`
+
+**Branch fields:** `name`, `current`, `remote`, `upstream`, `ahead`, `behind`, `commit`, `commit_time` (epoch), `summary`
+
+**`gitx stash` output fields:** `repo`, `count`, `entries[]`
+
+**Stash entry fields:** `index`, `message`, `commit`, `time` (epoch)
+
+**`gitx tags` output fields:** `repo`, `count`, `tags[]`
+
+**Tag fields:** `name`, `commit`, `commit_time` (epoch), `message` (annotated only), `tagger_name` (annotated only), `tagger_time` (annotated only), `is_annotated`
+
+---
+
 ## Composing tools
 
 ```bash
@@ -586,6 +641,15 @@ hashx build-a/app build-b/app --compare
 
 # Is this terminal capable of rendering rich UI?
 termx | jsonx '.interactive' --raw
+
+# Who touched this repo in the last 10 commits?
+gitx log . -n 10 --out ndjson | jsonx '[].author_name' | sort -u
+
+# What files are staged but not yet committed?
+gitx status . --out ndjson | jsonx '[?(@.index_status != null)]'
+
+# Which branches are behind their upstream?
+gitx branches . --out ndjson | jsonx '[?(@.behind > 0)]'
 
 # What's been happening to CPU in the last 5 minutes?
 statx summary 300 --out pretty
@@ -627,6 +691,7 @@ confx app.yaml --raw | jsonx '.server.port' --raw
 | astx | ✓ | ✓ | ✓ |
 | dnsx | ✓ | ✓ | ✓ |
 | confx | ✓ | ✓ | ✓ |
+| gitx | ✓ | ✓ | ✓ |
 
 "Structured fallback" means the tool returns a JSON `unavailable` block with a reason and platform-specific alternative — never silence, never a crash.
 

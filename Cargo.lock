@@ -804,6 +804,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "gitx"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "git2",
+ "serde",
+ "serde_json",
+ "ux-output",
+]
+
+[[package]]
 name = "globset"
 version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
