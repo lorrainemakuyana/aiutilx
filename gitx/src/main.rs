@@ -203,6 +203,7 @@ struct TagEntry {
 // ── main ──────────────────────────────────────────────────────────────────────
 
 fn main() {
+    ux_output::reset_sigpipe();
     let cli = Cli::parse();
 
     let result = match &cli.command {
@@ -357,7 +358,7 @@ fn run_log(
         commits,
     };
 
-    if out == "table" {
+    if mode == OutMode::Table {
         print_log_table(&output);
     } else if mode == OutMode::Ndjson {
         for c in &output.commits {
@@ -408,10 +409,19 @@ fn run_status(path: &PathBuf, out: &str) -> Result<(), git2::Error> {
         let s = entry.status();
         let path_str = entry.path().unwrap_or("").to_string();
 
-        let old_path = entry
-            .head_to_index()
-            .and_then(|d| d.old_file().path())
-            .map(|p| p.to_string_lossy().to_string());
+        let old_path = if s.contains(git2::Status::INDEX_RENAMED) {
+            entry
+                .head_to_index()
+                .and_then(|d| d.old_file().path())
+                .map(|p| p.to_string_lossy().to_string())
+        } else if s.contains(git2::Status::WT_RENAMED) {
+            entry
+                .index_to_workdir()
+                .and_then(|d| d.old_file().path())
+                .map(|p| p.to_string_lossy().to_string())
+        } else {
+            None
+        };
 
         let index_status = map_index_status(s);
         let workdir_status = map_workdir_status(s);
@@ -449,7 +459,7 @@ fn run_status(path: &PathBuf, out: &str) -> Result<(), git2::Error> {
         entries,
     };
 
-    if out == "table" {
+    if mode == OutMode::Table {
         print_status_table(&output);
     } else if mode == OutMode::Ndjson {
         for e in &output.entries {
@@ -572,7 +582,7 @@ fn run_branches(path: &PathBuf, remote: bool, all: bool, out: &str) -> Result<()
         branches,
     };
 
-    if out == "table" {
+    if mode == OutMode::Table {
         print_branches_table(&output);
     } else if mode == OutMode::Ndjson {
         for b in &output.branches {
@@ -622,7 +632,7 @@ fn run_stash(path: &PathBuf, out: &str) -> Result<(), git2::Error> {
         entries,
     };
 
-    if out == "table" {
+    if mode == OutMode::Table {
         print_stash_table(&output);
     } else if mode == OutMode::Ndjson {
         for e in &output.entries {
@@ -689,8 +699,20 @@ fn run_tags(path: &PathBuf, limit: usize, out: &str) -> Result<(), git2::Error> 
         true
     })?;
 
-    // Most recent commits first
-    tags.sort_by(|a, b| b.commit_time.cmp(&a.commit_time));
+    // Most recent first; annotated tags sort by tagger date (matches git tag --sort=-creatordate)
+    tags.sort_by(|a, b| {
+        let ta = if a.is_annotated {
+            a.tagger_time.unwrap_or(a.commit_time)
+        } else {
+            a.commit_time
+        };
+        let tb = if b.is_annotated {
+            b.tagger_time.unwrap_or(b.commit_time)
+        } else {
+            b.commit_time
+        };
+        tb.cmp(&ta)
+    });
     if limit > 0 {
         tags.truncate(limit);
     }
@@ -702,7 +724,7 @@ fn run_tags(path: &PathBuf, limit: usize, out: &str) -> Result<(), git2::Error> 
         tags,
     };
 
-    if out == "table" {
+    if mode == OutMode::Table {
         print_tags_table(&output);
     } else if mode == OutMode::Ndjson {
         for t in &output.tags {
@@ -860,8 +882,9 @@ fn status_char(s: &str) -> char {
 }
 
 fn format_epoch(ts: i64) -> String {
-    // Simple ISO-style date from epoch without external crates
-    // Seconds since 1970-01-01
+    if ts <= 0 {
+        return "1970-01-01".to_string();
+    }
     let secs = ts as u64;
     let days = secs / 86400;
     // Approximate: just show YYYY-MM-DD
@@ -885,9 +908,13 @@ fn days_to_ymd(mut days: u64) -> (u64, u64, u64) {
 }
 
 fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}…", &s[..max.saturating_sub(1)])
+    if s.chars().count() <= max {
+        return s.to_string();
     }
+    let cut = s
+        .char_indices()
+        .nth(max.saturating_sub(1))
+        .map(|(i, _)| i)
+        .unwrap_or(s.len());
+    format!("{}…", &s[..cut])
 }
