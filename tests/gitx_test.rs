@@ -70,7 +70,9 @@ fn gitx_status_branch_present() {
 
 #[test]
 fn gitx_branches_returns_at_least_one() {
-    let output = run_json_forced("gitx", &["branches", "."]);
+    // Use --all so remote-tracking refs are included; CI checkouts are detached HEAD
+    // with no local branches but always have at least one remote ref (e.g. origin/main).
+    let output = run_json_forced("gitx", &["branches", ".", "--all"]);
     assert!(output["branches"].is_array());
     assert!(
         output["count"].as_u64().unwrap_or(0) >= 1,
@@ -81,7 +83,8 @@ fn gitx_branches_returns_at_least_one() {
 
 #[test]
 fn gitx_branches_fields() {
-    let output = run_json_forced("gitx", &["branches", "."]);
+    // Use --all so remote-tracking refs are included in CI detached HEAD checkouts.
+    let output = run_json_forced("gitx", &["branches", ".", "--all"]);
     let branch = &output["branches"][0];
     assert!(branch["name"].is_string());
     assert!(branch["current"].is_boolean());
