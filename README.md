@@ -6,10 +6,10 @@ Built for AI agents that call shell tools. Humans can use them too — `--out ta
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/pi-bansal/aiutilx/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aiutilx/aiutilx/main/install.sh | bash
 
 # Windows (PowerShell)
-iwr https://raw.githubusercontent.com/pi-bansal/aiutilx/main/install.ps1 | iex
+iwr https://raw.githubusercontent.com/aiutilx/aiutilx/main/install.ps1 | iex
 ```
 
 ---
@@ -118,24 +118,24 @@ Every tool follows the same rules:
 ## Build
 
 The install scripts at the top of this README download prebuilt binaries from the
-[latest release](https://github.com/pi-bansal/aiutilx/releases/latest) — that's the
+[latest release](https://github.com/aiutilx/aiutilx/releases/latest) — that's the
 fastest way to get started and requires no Rust toolchain.
 
 To build from source instead:
 
 ```bash
-git clone https://github.com/pi-bansal/aiutilx
+git clone https://github.com/aiutilx/aiutilx
 cd aiutilx
 cargo build --workspace --release
 
 # All binaries land in target/release/
-cp target/release/{lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx,dnsx,confx} /usr/local/bin/
+cp target/release/{aiux,mcpx,lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx,dnsx,confx} /usr/local/bin/
 ```
 
 You can force `install.sh` to build from source instead of fetching a release:
 
 ```bash
-BUILD_FROM_SOURCE=1 curl -fsSL https://raw.githubusercontent.com/pi-bansal/aiutilx/main/install.sh | bash
+BUILD_FROM_SOURCE=1 curl -fsSL https://raw.githubusercontent.com/aiutilx/aiutilx/main/install.sh | bash
 ```
 
 ### Releases
