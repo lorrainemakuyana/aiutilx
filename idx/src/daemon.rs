@@ -10,17 +10,30 @@
 ///   Client sends: {"kind":"rebuild"}
 ///   Server responds with a single JSON line per request.
 
-use crate::bloom::{rebuild_bloom, BloomSet};
+#[cfg(unix)]
+use crate::bloom::BloomSet;
+#[cfg(unix)]
 use crate::builder::build_index;
+#[cfg(unix)]
 use crate::columns::ColumnarIndex;
-use crate::query::{run_query, Query, QueryResult};
+use crate::query::{Query, QueryResult};
+#[cfg(unix)]
+use crate::query::run_query;
+#[cfg(unix)]
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+#[cfg(unix)]
+use std::path::Path;
+use std::path::PathBuf;
+#[cfg(unix)]
 use std::sync::{Arc, RwLock};
+#[cfg(unix)]
 use std::time::UNIX_EPOCH;
+#[cfg(unix)]
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+#[cfg(unix)]
 use tokio::net::UnixListener;
+#[cfg(unix)]
 use tokio::sync::mpsc;
 
 // ── IPC message types ─────────────────────────────────────────────────────────
@@ -53,6 +66,7 @@ pub struct DaemonStatus {
 
 // ── Shared state ──────────────────────────────────────────────────────────────
 
+#[cfg(unix)]
 struct SharedState {
     index: ColumnarIndex,
     bloom: BloomSet,
@@ -60,6 +74,7 @@ struct SharedState {
 
 // ── Socket path ───────────────────────────────────────────────────────────────
 
+#[cfg(unix)]
 pub fn socket_path(root: &Path) -> PathBuf {
     // Hash the root path to get a unique socket name per watched directory
     use std::collections::hash_map::DefaultHasher;
@@ -68,15 +83,23 @@ pub fn socket_path(root: &Path) -> PathBuf {
     root.hash(&mut h);
     let hash = h.finish();
 
-    #[cfg(unix)]
-    return std::env::temp_dir().join(format!("idx-{:x}.sock", hash));
-
-    #[cfg(windows)]
-    return PathBuf::from(format!(r"\\.\pipe\idx-{:x}", hash));
+    std::env::temp_dir().join(format!("idx-{:x}.sock", hash))
 }
 
 // ── Daemon entry point ────────────────────────────────────────────────────────
 
+#[cfg(not(unix))]
+pub async fn run_daemon(_root: PathBuf, _respect_gitignore: bool) {
+    let u = ux_output::Unavailable::new(
+        "idx daemon",
+        "background daemon mode (Unix socket IPC + filesystem watching) is only implemented on Unix platforms",
+        Some("use `idx once` for one-shot indexed queries without a daemon"),
+    );
+    eprintln!("{}", serde_json::json!({"unavailable": u}));
+    std::process::exit(1);
+}
+
+#[cfg(unix)]
 pub async fn run_daemon(root: PathBuf, respect_gitignore: bool) {
     eprintln!("[idx] Building initial index for {} ...", root.display());
 
@@ -113,7 +136,6 @@ pub async fn run_daemon(root: PathBuf, respect_gitignore: bool) {
 
     // ── File watcher ─────────────────────────────────────────────────────────
     let (tx, mut rx) = mpsc::channel::<notify::Result<Event>>(256);
-    let root_clone = root.clone();
 
     let mut watcher = match RecommendedWatcher::new(
         move |res| { let _ = tx.blocking_send(res); },
@@ -188,6 +210,7 @@ pub async fn run_daemon(root: PathBuf, respect_gitignore: bool) {
     }
 }
 
+#[cfg(unix)]
 async fn handle_client(
     stream: tokio::net::UnixStream,
     state: Arc<RwLock<SharedState>>,
@@ -244,6 +267,7 @@ async fn handle_client(
 
 /// Apply incremental updates for a set of changed paths.
 /// For small changesets this is much faster than a full rebuild.
+#[cfg(unix)]
 async fn apply_incremental_updates(
     state: &Arc<RwLock<SharedState>>,
     root: &Path,

@@ -6,10 +6,10 @@ Built for AI agents that call shell tools. Humans can use them too — `--out ta
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/pi-bansal/aiutilx/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aiutilx/aiutilx/main/install.sh | bash
 
 # Windows (PowerShell)
-iwr https://raw.githubusercontent.com/pi-bansal/aiutilx/main/install.ps1 | iex
+iwr https://raw.githubusercontent.com/aiutilx/aiutilx/main/install.ps1 | iex
 ```
 
 ---
@@ -48,6 +48,58 @@ Inspired by how `ripgrep` reimagined `grep` — not a wrapper, a ground-up rethi
 | [`confx`](#confx) | yq, manual config parsing | YAML/TOML/INI/.properties to JSON |
 | [`gitx`](#gitx) | git log, git status, git branch, git stash, git tag | Structured git inspection |
 
+`aiux` is a dispatcher: `aiux <tool> [args...]` runs `<tool> [args...]` directly —
+useful if you only want to remember one binary name.
+
+`mcpx` is an [MCP](#mcp-server) server that exposes every tool above to any
+agent that speaks the Model Context Protocol — no need for the model to have the
+CLIs memorized.
+
+---
+
+## MCP server
+
+`mcpx` is a [Model Context Protocol](https://modelcontextprotocol.io) server. It
+speaks JSON-RPC 2.0 over stdio and registers all 18 tools as MCP tools, each with
+a typed input schema. Any MCP-capable agent (Claude Code, Claude Desktop, and
+other clients/frameworks) can call `lx`, `jsonx`, `px`, etc. as first-class tools
+— the schema is handed to the model at runtime, so it doesn't need the CLIs in
+its training data.
+
+Each tool takes two inputs:
+
+- `args` — the command-line arguments, one string per token (e.g. `["./src", "--depth", "4"]`)
+- `stdin` — optional data piped to the tool's standard input (e.g. JSON for `jsonx`, a log stream for `logx`)
+
+The tool's JSON stdout is returned as the result; a non-zero exit returns the
+structured error from stderr with `isError: true`. `mcpx` finds the tool binaries
+next to itself first (release archives bundle them together), then falls back to
+`PATH`.
+
+### Register with Claude Code
+
+```bash
+claude mcp add aiutilx mcpx
+```
+
+### Register with other MCP clients
+
+Add an entry to the client's MCP server config (e.g. Claude Desktop's
+`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "aiutilx": {
+      "command": "mcpx"
+    }
+  }
+}
+```
+
+Use an absolute path to `mcpx` if it isn't on the client's `PATH`. No arguments
+or environment variables are required.
+
 ---
 
 ## Design contract
@@ -67,24 +119,24 @@ Every tool follows the same rules:
 ## Build
 
 The install scripts at the top of this README download prebuilt binaries from the
-[latest release](https://github.com/pi-bansal/aiutilx/releases/latest) — that's the
+[latest release](https://github.com/aiutilx/aiutilx/releases/latest) — that's the
 fastest way to get started and requires no Rust toolchain.
 
 To build from source instead:
 
 ```bash
-git clone https://github.com/pi-bansal/aiutilx
+git clone https://github.com/aiutilx/aiutilx
 cd aiutilx
 cargo build --workspace --release
 
 # All binaries land in target/release/
-cp target/release/{lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx,dnsx,confx} /usr/local/bin/
+cp target/release/{aiux,mcpx,lx,px,logx,dx,arcx,envx,netx,jsonx,procx,idx,diffx,memx,statx,hashx,termx,astx,dnsx,confx} /usr/local/bin/
 ```
 
 You can force `install.sh` to build from source instead of fetching a release:
 
 ```bash
-BUILD_FROM_SOURCE=1 curl -fsSL https://raw.githubusercontent.com/pi-bansal/aiutilx/main/install.sh | bash
+BUILD_FROM_SOURCE=1 curl -fsSL https://raw.githubusercontent.com/aiutilx/aiutilx/main/install.sh | bash
 ```
 
 ### Releases

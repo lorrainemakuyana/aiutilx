@@ -1,15 +1,23 @@
 /// Client — connects to the daemon socket and sends queries.
 /// Used by `idx query` and by `lx` when a daemon is running for the current dir.
 
-use crate::daemon::{socket_path, Request, Response};
+use crate::daemon::{Request, Response};
+#[cfg(unix)]
+use crate::daemon::socket_path;
 use crate::query::Query;
 use std::path::Path;
+#[cfg(unix)]
 use std::time::Duration;
 
 #[derive(Debug)]
 pub enum ClientError {
+    #[cfg_attr(not(unix), allow(dead_code))]
     NoDaemon,
+    #[cfg_attr(unix, allow(dead_code))]
+    Unsupported,
+    #[cfg_attr(not(unix), allow(dead_code))]
     Io(std::io::Error),
+    #[cfg_attr(not(unix), allow(dead_code))]
     Protocol(String),
 }
 
@@ -17,6 +25,7 @@ impl std::fmt::Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ClientError::NoDaemon => write!(f, "no idx daemon running for this directory — run `idx start`"),
+            ClientError::Unsupported => write!(f, "idx daemon mode is not supported on this platform yet — use `idx once` instead"),
             ClientError::Io(e)    => write!(f, "socket error: {}", e),
             ClientError::Protocol(s) => write!(f, "protocol error: {}", s),
         }
@@ -24,9 +33,16 @@ impl std::fmt::Display for ClientError {
 }
 
 /// Check whether a daemon is running for `root`.
+#[cfg(unix)]
 pub fn daemon_running(root: &Path) -> bool {
     let sock = socket_path(root);
     sock.exists() && std::os::unix::net::UnixStream::connect(&sock).is_ok()
+}
+
+/// Daemon mode is not implemented on non-Unix platforms yet.
+#[cfg(not(unix))]
+pub fn daemon_running(_root: &Path) -> bool {
+    false
 }
 
 /// Send a query to the daemon and return the response.
@@ -42,6 +58,7 @@ pub fn send_rebuild(root: &Path) -> Result<Response, ClientError> {
     send_request(root, Request::Rebuild)
 }
 
+#[cfg(unix)]
 fn send_request(root: &Path, request: Request) -> Result<Response, ClientError> {
     use std::io::{BufRead, BufReader, Write};
     use std::os::unix::net::UnixStream;
@@ -70,4 +87,9 @@ fn send_request(root: &Path, request: Request) -> Result<Response, ClientError> 
 
     serde_json::from_str(&line)
         .map_err(|e| ClientError::Protocol(format!("{}: {}", e, line.trim())))
+}
+
+#[cfg(not(unix))]
+fn send_request(_root: &Path, _request: Request) -> Result<Response, ClientError> {
+    Err(ClientError::Unsupported)
 }
