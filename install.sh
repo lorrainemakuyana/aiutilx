@@ -3,9 +3,9 @@
 # Windows: use install.ps1 instead
 set -euo pipefail
 
-REPO="pi-bansal/aiutilx"
+REPO="aiutilx/aiutilx"
 INSTALL_DIR="${AIUTILX_INSTALL_DIR:-/usr/local/bin}"
-TOOLS=(lx px logx dx arcx envx netx jsonx procx idx diffx memx statx hashx termx astx dnsx confx gitx)
+TOOLS=(aiux mcpx lx px logx dx arcx envx netx jsonx procx idx diffx memx statx hashx termx astx dnsx confx gitx)
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
